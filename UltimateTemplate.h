@@ -1238,6 +1238,62 @@ DATA_TYPE kth_smallest(BST_NODE n, int k) {
     }
 }
 
+int max_value_bst(BST_NODE n, DATA_TYPE data) {
+    if (n == NULL) {
+        return 0;
+    }
+    if (GET_DATA(data) < GET_DATA(n->data)) {
+        return max_value_bst(n->left, data);
+    } else if (GET_DATA(data) > GET_DATA(n->data)) {
+        return max_value_bst(n->right, data);
+    } else {
+        if (n->right == NULL) {
+            return 0;
+        }
+        BST_NODE temp = n->right;
+        while (temp->left != NULL) {
+            temp = temp->left;
+        }
+        return GET_DATA(temp->data);
+    }
+}
+
+int min_value_bst(BST_NODE n, DATA_TYPE data) {
+    if (n == NULL) {
+        return 0;
+    }
+    if (GET_DATA(data) < GET_DATA(n->data)) {
+        return min_value_bst(n->left, data);
+    } else if (GET_DATA(data) > GET_DATA(n->data)) {
+        return min_value_bst(n->right, data);
+    } else {
+        if (n->left == NULL) {
+            return 0;
+        }
+        BST_NODE temp = n->left;
+        while (temp->right != NULL) {
+            temp = temp->right;
+        }
+        return GET_DATA(temp->data);
+    }
+}
+
+int is_bst(BST_NODE n) {
+    if (n == NULL) {
+        return 1;
+    }
+    if (n->left != NULL && max_value_bst(n->left, n->data) > GET_DATA(n->data)) {
+        return 0;
+    }
+    if (n->right != NULL && min_value_bst(n->right, n->data) < GET_DATA(n->data)) {
+        return 0;
+    }
+    if (!is_bst(n->left) || !is_bst(n->right)) {
+        return 0;
+    }
+    return 1;
+}
+
 // ================== BINARY SEARCH TREE END ==================
 
 // =========== BINARY SEARCH TREE WITH PARENT POINTER ============
@@ -2215,6 +2271,33 @@ void delete_avl(BST_NODE n, DATA_TYPE data) {
     } else {
         delete_avl(n->right, data);
     }
+
+    // rebalancing
+    int balance = is_height_balanced(n);
+    if (!balance) {
+        if (GET_DATA(data) < GET_DATA(n->data) && 
+        GET_DATA(data) < GET_DATA(n->left->data)) {
+            n = right_rotate(n);
+        }
+        if (GET_DATA(data) > GET_DATA(n->data) && 
+        GET_DATA(data) > GET_DATA(n->right->data)) {
+            n = left_rotate(n);
+        }
+        if (GET_DATA(data) < GET_DATA(n->data) && 
+        GET_DATA(data) > GET_DATA(n->left->data)) {
+            n->left = left_rotate(n->left);
+            n = right_rotate(n);
+        }
+        if (GET_DATA(data) > GET_DATA(n->data) && 
+        GET_DATA(data) < GET_DATA(n->right->data)) {
+            n->right = right_rotate(n->right);
+            n = left_rotate(n);
+        }
+    }
+}
+
+int check_avl(BST bst) {
+    return is_height_balanced(bst->root) && is_bst(bst->root);
 }
 
 // ============ AVL TREE USING BST END ============
@@ -2651,83 +2734,82 @@ HEAP create_heap(int capacity) {
     return h;
 }
 
-void insert_heap(HEAP h, DATA_TYPE data) {
+int parent(HEAP h, int i) {
+    return (i - 1) / 2;
+}
+
+int left_child(HEAP h, int i) {
+    return 2 * i + 1;
+}
+
+int right_child(HEAP h, int i) {
+    return 2 * i + 2;
+}
+
+void insert_max_heap(HEAP h, DATA_TYPE data) {
     if (h->size == h->capacity) {
         return;
     }
     h->size++;
     int i = h->size - 1;
     h->arr[i] = data;
-    while (i != 0 && GET_DATA(h->arr[(i - 1) / 2]) > GET_DATA(h->arr[i])) {
+    while (i != 0 && GET_DATA(h->arr[parent(h, i)]) < GET_DATA(h->arr[i])) {
         DATA_TYPE temp = h->arr[i];
-        h->arr[i] = h->arr[(i - 1) / 2];
-        h->arr[(i - 1) / 2] = temp;
-        i = (i - 1) / 2;
+        h->arr[i] = h->arr[parent(h, i)];
+        h->arr[parent(h, i)] = temp;
+        i = parent(h, i);
     }
 }
 
-void heapify(HEAP h, int i) {
-    int smallest = i;
-    int left = 2 * i + 1;
-    int right = 2 * i + 2;
-    if (left < h->size && GET_DATA(h->arr[left]) < GET_DATA(h->arr[smallest])) {
-        smallest = left;
+void insert_min_heap(HEAP h, DATA_TYPE data) {
+    if (h->size == h->capacity) {
+        return;
     }
-    if (right < h->size && GET_DATA(h->arr[right]) < GET_DATA(h->arr[smallest])) {
-        smallest = right;
+    h->size++;
+    int i = h->size - 1;
+    h->arr[i] = data;
+    while (i != 0 && GET_DATA(h->arr[parent(h, i)]) > GET_DATA(h->arr[i])) {
+        DATA_TYPE temp = h->arr[i];
+        h->arr[i] = h->arr[parent(h, i)];
+        h->arr[parent(h, i)] = temp;
+        i = parent(h, i);
+    }
+}
+
+void max_heapify(HEAP h, int i) {
+    int l = left_child(h, i);
+    int r = right_child(h, i);
+    int largest = i;
+    if (l < h->size && GET_DATA(h->arr[l]) > GET_DATA(h->arr[largest])) {
+        largest = l;
+    }
+    if (r < h->size && GET_DATA(h->arr[r]) > GET_DATA(h->arr[largest])) {
+        largest = r;
+    }
+    if (largest != i) {
+        DATA_TYPE temp = h->arr[i];
+        h->arr[i] = h->arr[largest];
+        h->arr[largest] = temp;
+        max_heapify(h, largest);
+    }
+}
+
+void min_heapify(HEAP h, int i) {
+    int l = left_child(h, i);
+    int r = right_child(h, i);
+    int smallest = i;
+    if (l < h->size && GET_DATA(h->arr[l]) < GET_DATA(h->arr[smallest])) {
+        smallest = l;
+    }
+    if (r < h->size && GET_DATA(h->arr[r]) < GET_DATA(h->arr[smallest])) {
+        smallest = r;
     }
     if (smallest != i) {
         DATA_TYPE temp = h->arr[i];
         h->arr[i] = h->arr[smallest];
         h->arr[smallest] = temp;
-        heapify(h, smallest);
+        min_heapify(h, smallest);
     }
-}
-
-DATA_TYPE extract_min(HEAP h) {
-    if (h->size <= 0) {
-        return NULL;
-    }
-    if (h->size == 1) {
-        h->size--;
-        return h->arr[0];
-    }
-    DATA_TYPE root = h->arr[0];
-    h->arr[0] = h->arr[h->size - 1];
-    h->size--;
-    heapify(h, 0);
-    return root;
-}
-
-DATA_TYPE extract_max(HEAP h) {
-    if (h->size <= 0) {
-        return NULL;
-    }
-    if (h->size == 1) {
-        h->size--;
-        return h->arr[0];
-    }
-    DATA_TYPE root = h->arr[0];
-    h->arr[0] = h->arr[h->size - 1];
-    h->size--;
-    heapify(h, 0);
-    return root;
-}
-
-HEAP build_min_heap(DATA_TYPE *arr, int n) {
-    HEAP h = create_heap(n);
-    for (int i = 0; i < n; i++) {
-        insert_heap(h, arr[i]);
-    }
-    return h;
-}
-
-HEAP build_max_heap(DATA_TYPE *arr, int n) {
-    HEAP h = create_heap(n);
-    for (int i = 0; i < n; i++) {
-        insert_heap(h, arr[i]);
-    }
-    return h;
 }
 
 void delete_heap(HEAP h) {
@@ -2746,12 +2828,57 @@ int nodes_at_level(HEAP h, int level) {
     return count;
 }
 
-void heap_sort(DATA_TYPE *arr, int n) {
-    HEAP h = build_min_heap(arr, n);
-    for (int i = 0; i < n; i++) {
-        arr[i] = extract_min(h);
+DATA_TYPE extract_min(HEAP h) {
+    if (h->size == 0) {
+        return NULL;
     }
-    delete_heap(h);
+    if (h->size == 1) {
+        h->size--;
+        return h->arr[0];
+    }
+    DATA_TYPE root = h->arr[0];
+    h->arr[0] = h->arr[h->size - 1];
+    h->size--;
+    min_heapify(h, 0);
+    return root;
+}
+
+DATA_TYPE extract_max(HEAP h) {
+    if (h->size == 0) {
+        return NULL;
+    }
+    if (h->size == 1) {
+        h->size--;
+        return h->arr[0];
+    }
+    DATA_TYPE root = h->arr[0];
+    h->arr[0] = h->arr[h->size - 1];
+    h->size--;
+    max_heapify(h, 0);
+    return root;
+}
+
+void build_max_heap(HEAP h) {
+    for (int i = h->size / 2 - 1; i >= 0; i--) {
+        max_heapify(h, i);
+    }
+}
+
+void build_min_heap(HEAP h) {
+    for (int i = h->size / 2 - 1; i >= 0; i--) {
+        min_heapify(h, i);
+    }
+}
+
+void heap_sort(HEAP h) {
+    build_max_heap(h);
+    for (int i = h->size - 1; i > 0; i--) {
+        DATA_TYPE temp = h->arr[0];
+        h->arr[0] = h->arr[i];
+        h->arr[i] = temp;
+        h->size--;
+        max_heapify(h, 0);
+    }
 }
 
 // ============ HEAP END ============
@@ -2771,16 +2898,20 @@ PRIORITY_QUEUE create_priority_queue(int capacity) {
     return pq;
 }
 
-void insert_priority_queue(PRIORITY_QUEUE pq, DATA_TYPE data) {
-    insert_heap(pq->h, data);
+void push_front(PRIORITY_QUEUE pq, DATA_TYPE data) {
+    insert_max_heap(pq->h, data);
 }
 
-DATA_TYPE extract_min_priority_queue(PRIORITY_QUEUE pq) {
-    return extract_min(pq->h);
+void push_back(PRIORITY_QUEUE pq, DATA_TYPE data) {
+    insert_min_heap(pq->h, data);
 }
 
-DATA_TYPE extract_max_priority_queue(PRIORITY_QUEUE pq) {
+DATA_TYPE pop_front(PRIORITY_QUEUE pq) {
     return extract_max(pq->h);
+}
+
+DATA_TYPE pop_back(PRIORITY_QUEUE pq) {
+    return extract_min(pq->h);
 }
 
 void delete_priority_queue(PRIORITY_QUEUE pq) {
