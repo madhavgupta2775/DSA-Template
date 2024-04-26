@@ -37,6 +37,7 @@ void sortData(void *data, int n) {
 #define GET_DATA(obj) obj.data
 #define PRINT_DATA(obj) printf("%d\n", obj.data)
 #define PRINT_MEOW(obj) printf("%d %s\n", obj.data, obj.lamao)
+#define NULL_DATA {0, ""}
 
 // ================== DEPENDENCY INJECTION END ==================
 
@@ -2433,6 +2434,37 @@ void delete_avl_node(AVL_NODE n, DATA_TYPE data) {
     } else {
         delete_avl_node(n->right, data);
     }
+
+    // rebalancing
+    n->height = 1 + max(height_avl(n->left), height_avl(n->right));
+    int balance = get_balance(n);
+    if (balance > 1 && GET_DATA(data) < GET_DATA(n->left->data)) {
+        n = right_rotate_avl(n);
+    }
+    if (balance < -1 && GET_DATA(data) > GET_DATA(n->right->data)) {
+        n = left_rotate_avl(n);
+    }
+    if (balance > 1 && GET_DATA(data) > GET_DATA(n->left->data)) {
+        n->left = left_rotate_avl(n->left);
+        n = right_rotate_avl(n);
+    }
+    if (balance < -1 && GET_DATA(data) < GET_DATA(n->right->data)) {
+        n->right = right_rotate_avl(n->right);
+        n = left_rotate_avl(n);
+    }
+}
+
+AVL_NODE search_avl(AVL_NODE n, DATA_TYPE data) {
+    if (n == NULL) {
+        return NULL;
+    }
+    if (GET_DATA(data) == GET_DATA(n->data)) {
+        return n;
+    }
+    if (GET_DATA(data) < GET_DATA(n->data)) {
+        return search_avl(n->left, data);
+    }
+    return search_avl(n->right, data);
 }
 
 // ============ AVL TREE END ================
@@ -2568,6 +2600,40 @@ void delete_avl_bst_parent_iterative(BST_PARENT_NODE n, DATA_TYPE data) {
         current->data = temp->data;
         delete_avl_bst_parent_iterative(current->right, temp->data);
     }
+
+    // rebalancing
+    BST_PARENT_NODE temp = parent;
+    while (temp != NULL) {
+        int balance = get_balance_bst_parent(temp);
+        if (balance > 1 && GET_DATA(data) < GET_DATA(temp->left->data)) {
+            temp = right_rotate_bst_parent(temp);
+        }
+        if (balance < -1 && GET_DATA(data) > GET_DATA(temp->right->data)) {
+            temp = left_rotate_bst_parent(temp);
+        }
+        if (balance > 1 && GET_DATA(data) > GET_DATA(temp->left->data)) {
+            temp->left = left_rotate_bst_parent(temp->left);
+            temp = right_rotate_bst_parent(temp);
+        }
+        if (balance < -1 && GET_DATA(data) < GET_DATA(temp->right->data)) {
+            temp->right = right_rotate_bst_parent(temp->right);
+            temp = left_rotate_bst_parent(temp);
+        }
+        temp = temp->parent;
+    }
+}
+
+BST_PARENT_NODE search_avl_bst_parent(BST_PARENT_NODE n, DATA_TYPE data) {
+    if (n == NULL) {
+        return NULL;
+    }
+    if (GET_DATA(data) == GET_DATA(n->data)) {
+        return n;
+    }
+    if (GET_DATA(data) < GET_DATA(n->data)) {
+        return search_avl_bst_parent(n->left, data);
+    }
+    return search_avl_bst_parent(n->right, data);
 }
 
 // ============ AVL TREE USING BST WITH PARENT POINTER END ============
@@ -2593,7 +2659,7 @@ typedef struct two_four_tree * TWO_FOUR_TREE;
 TWO_FOUR_NODE create_two_four_node(DATA_TYPE data) {
     TWO_FOUR_NODE n = (TWO_FOUR_NODE)malloc(sizeof(two_four_node));
     n->data[0] = data;
-    n->data[1] = n->data[2] = NULL;
+    n->data[1] = n->data[2] = NULL_DATA;
     n->child[0] = n->child[1] = n->child[2] = n->child[3] = NULL;
     n->num_keys = 1;
     return n;
@@ -2664,6 +2730,37 @@ void insert_two_four_tree(TWO_FOUR_TREE t, DATA_TYPE data) {
     }
 }
 
+TWO_FOUR_NODE merge_nodes(TWO_FOUR_NODE x, TWO_FOUR_NODE y) {
+    TWO_FOUR_NODE z = create_two_four_node(x->data[1]);
+    z->child[0] = x->child[0];
+    z->child[1] = x->child[1];
+    z->child[2] = y->child[0];
+    z->child[3] = y->child[1];
+    z->num_keys = 1;
+    return z;
+}
+
+TWO_FOUR_NODE search_two_four_tree(TWO_FOUR_NODE n, DATA_TYPE data) {
+    if (n == NULL) {
+        return NULL;
+    }
+    if (GET_DATA(data) == GET_DATA(n->data[0])) {
+        return n;
+    } else if (GET_DATA(data) < GET_DATA(n->data[0])) {
+        return search_two_four_tree(n->child[0], data);
+    } else if (n->num_keys > 1 && GET_DATA(data) == GET_DATA(n->data[1])) {
+        return n;
+    } else if (n->num_keys > 1 && GET_DATA(data) < GET_DATA(n->data[1])) {
+        return search_two_four_tree(n->child[1], data);
+    } else if (n->num_keys > 2 && GET_DATA(data) == GET_DATA(n->data[2])) {
+        return n;
+    } else if (n->num_keys > 2 && GET_DATA(data) < GET_DATA(n->data[2])) {
+        return search_two_four_tree(n->child[2], data);
+    } else {
+        return search_two_four_tree(n->child[3], data);
+    }
+}
+
 void delete_two_four_tree(TWO_FOUR_NODE n, DATA_TYPE data) {
     if (n == NULL) {
         return;
@@ -2721,6 +2818,7 @@ struct heap {
     DATA_TYPE *arr;
     int capacity;
     int size;
+    int depth;
 };
 
 typedef struct heap heap;
@@ -2731,6 +2829,7 @@ HEAP create_heap(int capacity) {
     h->arr = (DATA_TYPE *)malloc(sizeof(DATA_TYPE) * capacity);
     h->capacity = capacity;
     h->size = 0;
+    h->depth = 0;
     return h;
 }
 
@@ -2817,13 +2916,13 @@ void delete_heap(HEAP h) {
     free(h);
 }
 
-int nodes_at_level(HEAP h, int level) {
-    if (level == 0) {
-        return 1;
-    }
+int nodes_at_depth(HEAP h, int depth) {
+    // go to the first node at the depth
+    int i = pow(2, depth) - 1;
     int count = 0;
-    for (int i = 0; i < h->size; i++) {
-        count += nodes_at_level(h, level - 1);
+    while (i < h->size && i < pow(2, depth + 1) - 1) {
+        count++;
+        i++;
     }
     return count;
 }
@@ -2906,6 +3005,10 @@ void push_back(PRIORITY_QUEUE pq, DATA_TYPE data) {
     insert_min_heap(pq->h, data);
 }
 
+DATA_TYPE front_priority_queue(PRIORITY_QUEUE pq) {
+    return pq->h->arr[0];
+}
+
 DATA_TYPE pop_front(PRIORITY_QUEUE pq) {
     return extract_max(pq->h);
 }
@@ -2914,9 +3017,41 @@ DATA_TYPE pop_back(PRIORITY_QUEUE pq) {
     return extract_min(pq->h);
 }
 
+void increase_key(PRIORITY_QUEUE pq, int i, DATA_TYPE data) {
+    pq->h->arr[i] = data;
+    while (i != 0 && GET_DATA(pq->h->arr[parent(pq->h, i)]) < GET_DATA(pq->h->arr[i])) {
+        DATA_TYPE temp = pq->h->arr[i];
+        pq->h->arr[i] = pq->h->arr[parent(pq->h, i)];
+        pq->h->arr[parent(pq->h, i)] = temp;
+        i = parent(pq->h, i);
+    }
+}
+
 void delete_priority_queue(PRIORITY_QUEUE pq) {
     delete_heap(pq->h);
     free(pq);
+}
+
+LIST merge_k_ll(LIST *lists, int k) {
+    PRIORITY_QUEUE pq = create_priority_queue(k);
+    for (int i = 0; i < k; i++) {
+        push_front(pq, lists[i]->head->data);
+        lists[i]->head = lists[i]->head->next;
+    }
+    LIST merged = create_list();
+    while (pq->h->size > 0) {
+        DATA_TYPE max = pop_front(pq);
+        insert_in_order_ll(&merged->head, max);
+        for (int i = 0; i < k; i++) {
+            if (lists[i]->head != NULL && GET_DATA(lists[i]->head->data) == GET_DATA(max)) {
+                push_front(pq, lists[i]->head->data);
+                lists[i]->head = lists[i]->head->next;
+                break;
+            }
+        }
+    }
+    delete_priority_queue(pq);
+    return merged;
 }
 
 // ============ PRIOIRTY QUEUE END ============
