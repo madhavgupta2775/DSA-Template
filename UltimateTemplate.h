@@ -3369,6 +3369,32 @@ void radix_exchange_sort(DATA_TYPE *arr, int n, int bit, int low, int high) {
     radix_exchange_sort(arr, n, bit - 1, j, high);
 }
 
+void radix_exchange_sort_iterative(DATA_TYPE *arr, int n) {
+    int low = 0;
+    int high = n - 1;
+    int bit = 31;
+    while (low < high && bit >= 0) {
+        int i = low;
+        int j = high;
+        while (i < j) {
+            while (i < j && !(GET_DATA(arr[i]) & (1 << bit))) {
+                i++;
+            }
+            while (i < j && (GET_DATA(arr[j]) & (1 << bit))) {
+                j--;
+            }
+            DATA_TYPE temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+        }
+        if (!(GET_DATA(arr[high]) & (1 << bit))) {
+            j++;
+        }
+        high = j - 1;
+        bit--;
+    }
+}
+
 // ============ RADIX SORT END ============
 
 // ============ BUCKET SORT ============
