@@ -3209,6 +3209,36 @@ int three_way_partition(DATA_TYPE *arr, int low, int high, int pivot, int *i, in
     return mid;
 }
 
+NODE partition_ll(NODE low, NODE high, NODE *new_low, NODE *new_high) {
+    NODE pivot = high;
+    NODE prev = NULL;
+    NODE curr = low;
+    NODE tail = pivot;
+    while (curr != pivot) {
+        if (GET_DATA(curr->data) < GET_DATA(pivot->data)) {
+            if ((*new_low) == NULL) {
+                (*new_low) = curr;
+            }
+            prev = curr;
+            curr = curr->next;
+        } else {
+            if (prev) {
+                prev->next = curr->next;
+            }
+            NODE temp = curr->next;
+            curr->next = NULL;
+            tail->next = curr;
+            tail = curr;
+            curr = temp;
+        }
+    }
+    if ((*new_low) == NULL) {
+        (*new_low) = pivot;
+    }
+    (*new_high) = tail;
+    return pivot;
+}
+
 // ============ PARTITION UTILS END ============
 
 // ============ QUICK SORT ============
@@ -3279,6 +3309,34 @@ void quick_sort_hybrid_iterative(DATA_TYPE *arr, int low, int high) {
             }
         }
     }
+}
+
+NODE get_tail_ll(NODE head) {
+    NODE temp = head;
+    while (temp->next != NULL) {
+        temp = temp->next;
+    }
+    return temp;
+}
+
+void quick_sort_ll(NODE low, NODE high) {
+    if (low == NULL || high == NULL || low == high || high->next == low) {
+        return;
+    }
+    NODE new_low = NULL;
+    NODE new_high = NULL;
+    NODE pivot = partition_ll(low, high, &new_low, &new_high);
+    if (new_low != pivot) {
+        NODE temp = new_low;
+        while (temp->next != pivot) {
+            temp = temp->next;
+        }
+        temp->next = NULL;
+        quick_sort_ll(new_low, temp);
+        temp = get_tail_ll(new_low);
+        temp->next = pivot;
+    }
+    quick_sort_ll(pivot->next, new_high);
 }
 
 // ============ QUICK SORT END ============
