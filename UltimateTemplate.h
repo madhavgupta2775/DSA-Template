@@ -3116,8 +3116,7 @@ int median_of_medians(DATA_TYPE *arr, int low, int high, int k) {
             median[i] = arr[low + i * 5 + 2];
             i++;
         }
-        int med_of_med = (i == 1) ? i - 1 : 
-        median_of_medians(median, 0, i - 1, i / 2);
+        int med_of_med = (i == 1) ? i - 1 : median_of_medians(median, 0, i - 1, i / 2);
         int pos = partition(arr, low, high, med_of_med);
         if (pos - low == k - 1) {
             return pos;
@@ -3206,6 +3205,8 @@ int three_way_partition(DATA_TYPE *arr, int low, int high, int pivot, int *i, in
             mid++;
         }
     }
+
+    return mid;
 }
 
 // ============ PARTITION UTILS END ============
