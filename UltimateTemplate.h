@@ -3285,16 +3285,16 @@ void quick_sort_hybrid_iterative(DATA_TYPE *arr, int low, int high) {
 
 // ============ COUNTING SORT ============
 
-void counting_sort(DATA_TYPE *arr, int n) {
+void counting_sort(DATA_TYPE *arr, int n, int k) {
     DATA_TYPE output[n];
-    int count[256];
-    for (int i = 0; i < 256; i++) {
+    int count[k + 1];
+    for (int i = 0; i <= k; i++) {
         count[i] = 0;
     }
     for (int i = 0; i < n; i++) {
         count[GET_DATA(arr[i])]++;
     }
-    for (int i = 1; i < 256; i++) {
+    for (int i = 1; i <= k; i++) {
         count[i] += count[i - 1];
     }
     for (int i = n - 1; i >= 0; i--) {
@@ -3345,16 +3345,28 @@ void radix_sort(DATA_TYPE *arr, int n) {
 
 
 // binary quick sort
-void radix_exchange_sort(DATA_TYPE *arr, int n) {
-    int max = GET_DATA(arr[0]);
-    for (int i = 1; i < n; i++) {
-        if (GET_DATA(arr[i]) > max) {
-            max = GET_DATA(arr[i]);
+void radix_exchange_sort(DATA_TYPE *arr, int n, int bit, int low, int high) {
+    if (low >= high || bit < 0) {
+        return;
+    }
+    int i = low;
+    int j = high;
+    while (i < j) {
+        while (i < j && !(GET_DATA(arr[i]) & (1 << bit))) {
+            i++;
         }
+        while (i < j && (GET_DATA(arr[j]) & (1 << bit))) {
+            j--;
+        }
+        DATA_TYPE temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
     }
-    for (int exp = 1; max / exp > 0; exp *= 2) {
-        counting_sort_radix(arr, n, exp);
+    if (!(GET_DATA(arr[high]) & (1 << bit))) {
+        j++;
     }
+    radix_exchange_sort(arr, n, bit - 1, low, j - 1);
+    radix_exchange_sort(arr, n, bit - 1, j, high);
 }
 
 // ============ RADIX SORT END ============
@@ -3362,22 +3374,25 @@ void radix_exchange_sort(DATA_TYPE *arr, int n) {
 // ============ BUCKET SORT ============
 
 void bucket_sort(DATA_TYPE *arr, int n) {
-    DATA_TYPE buckets[10][n];
-    int count[10];
-    for (int i = 0; i < 10; i++) {
-        count[i] = 0;
+    int max = GET_DATA(arr[0]);
+    for (int i = 1; i < n; i++) {
+        if (GET_DATA(arr[i]) > max) {
+            max = GET_DATA(arr[i]);
+        }
+    }
+    max++;
+    LIST *buckets = (LIST *)malloc(sizeof(LIST) * max);
+    for (int i = 0; i < max; i++) {
+        buckets[i] = create_list();
     }
     for (int i = 0; i < n; i++) {
-        int index = GET_DATA(arr[i]) * 10;
-        buckets[index][count[index]++] = arr[i];
+        insert_in_order_ll(&buckets[GET_DATA(arr[i])]->head, arr[i]);
     }
-    for (int i = 0; i < 10; i++) {
-        insertion_sort(buckets[i], 0, count[i] - 1);
-    }
-    int index = 0;
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < count[i]; j++) {
-            arr[index++] = buckets[i][j];
+    for (int i = 0, j = 0; i < max; i++) {
+        NODE temp = buckets[i]->head;
+        while (temp != NULL) {
+            arr[j++] = temp->data;
+            temp = temp->next;
         }
     }
 }
