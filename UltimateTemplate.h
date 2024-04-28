@@ -2208,6 +2208,85 @@ BST_NODE right_rotate(BST_NODE y) {
     return x;
 }
 
+BST_NODE balance_bst_node(BST_NODE n) {
+    int balance = is_height_balanced(n);
+    if (!balance) {
+        if (height_bst(n->left) - height_bst(n->right) > 1) {
+            if (height_bst(n->left->left) >= height_bst(n->left->right)) {
+                n = right_rotate(n);
+            } else {
+                n->left = left_rotate(n->left);
+                n = right_rotate(n);
+            }
+        } else {
+            if (height_bst(n->right) - height_bst(n->left) > 1) {
+                if (height_bst(n->right->right) >= height_bst(n->right->left)) {
+                    n = left_rotate(n);
+                } else {
+                    n->right = right_rotate(n->right);
+                    n = left_rotate(n);
+                }
+            }
+        }
+    }
+    return n;
+}
+
+BST_NODE get_parent(BST bst, BST_NODE n) {
+    if (n == bst->root) {
+        return NULL;
+    }
+    BST_NODE temp = bst->root;
+    while (temp != NULL) {
+        if (temp->left == n || temp->right == n) {
+            return temp;
+        }
+        if (GET_DATA(n->data) < GET_DATA(temp->data)) {
+            temp = temp->left;
+        } else {
+            temp = temp->right;
+        }
+    }
+    return NULL;
+}
+
+BST_NODE predecessor(BST bst, BST_NODE n) {
+    if(n->left != NULL) {
+        n = n->left;
+        while (n->right != NULL) {
+            n = n->right;
+        }
+        return n;
+    }
+    else {
+        BST_NODE temp = n;
+        n = get_parent(bst, n);
+        while (n != NULL && n->left == temp) {
+            temp = n;
+            n = get_parent(bst, n);
+        }
+        return n;
+    }
+}
+
+BST_NODE successor(BST bst, BST_NODE n) {
+    if (n->right != NULL) {
+        n = n->right;
+        while (n->left != NULL) {
+            n = n->left;
+        }
+        return n;
+    } else {
+        BST_NODE temp = n;
+        n = get_parent(bst, n);
+        while (n != NULL && n->right == temp) {
+            temp = n;
+            n = get_parent(bst, n);
+        }
+        return n;
+    }
+}
+
 BST_NODE insert_avl(BST_NODE root, DATA_TYPE data) {
     if (root == NULL) {
         return create_bst_node(data);
@@ -2243,9 +2322,9 @@ BST_NODE insert_avl(BST_NODE root, DATA_TYPE data) {
     return root;
 }
 
-void delete_avl(BST_NODE n, DATA_TYPE data) {
+BST_NODE delete_avl(BST_NODE n, DATA_TYPE data) {
     if (n == NULL) {
-        return;
+        return NULL;
     }
     if (GET_DATA(data) == GET_DATA(n->data)) {
         if (n->left == NULL && n->right == NULL) {
@@ -2272,29 +2351,8 @@ void delete_avl(BST_NODE n, DATA_TYPE data) {
     } else {
         delete_avl(n->right, data);
     }
-
-    // rebalancing
-    int balance = is_height_balanced(n);
-    if (!balance) {
-        if (GET_DATA(data) < GET_DATA(n->data) && 
-        GET_DATA(data) < GET_DATA(n->left->data)) {
-            n = right_rotate(n);
-        }
-        if (GET_DATA(data) > GET_DATA(n->data) && 
-        GET_DATA(data) > GET_DATA(n->right->data)) {
-            n = left_rotate(n);
-        }
-        if (GET_DATA(data) < GET_DATA(n->data) && 
-        GET_DATA(data) > GET_DATA(n->left->data)) {
-            n->left = left_rotate(n->left);
-            n = right_rotate(n);
-        }
-        if (GET_DATA(data) > GET_DATA(n->data) && 
-        GET_DATA(data) < GET_DATA(n->right->data)) {
-            n->right = right_rotate(n->right);
-            n = left_rotate(n);
-        }
-    }
+    n = balance_bst_node(n);
+    return n;
 }
 
 int check_avl(BST bst) {
@@ -2375,6 +2433,79 @@ int get_balance(AVL_NODE n) {
     return height_avl(n->left) - height_avl(n->right);
 }
 
+AVL_NODE get_avl_parent(AVL_TREE t, AVL_NODE n) {
+    if (n == t->root) {
+        return NULL;
+    }
+    AVL_NODE temp = t->root;
+    while (temp != NULL) {
+        if (temp->left == n || temp->right == n) {
+            return temp;
+        }
+        if (GET_DATA(n->data) < GET_DATA(temp->data)) {
+            temp = temp->left;
+        } else {
+            temp = temp->right;
+        }
+    }
+    return NULL;
+}
+
+AVL_NODE predecessor_avl(AVL_TREE t, AVL_NODE n) {
+    if (n->left != NULL) {
+        n = n->left;
+        while (n->right != NULL) {
+            n = n->right;
+        }
+        return n;
+    } else {
+        AVL_NODE temp = n;
+        n = get_avl_parent(t, n);
+        while (n != NULL && n->left == temp) {
+            temp = n;
+            n = get_avl_parent(t, n);
+        }
+        return n;
+    }
+}
+
+AVL_NODE successor_avl(AVL_TREE t, AVL_NODE n) {
+    if (n->right != NULL) {
+        n = n->right;
+        while (n->left != NULL) {
+            n = n->left;
+        }
+        return n;
+    } else {
+        AVL_NODE temp = n;
+        n = get_avl_parent(t, n);
+        while (n != NULL && n->right == temp) {
+            temp = n;
+            n = get_avl_parent(t, n);
+        }
+        return n;
+    }
+}
+
+AVL_NODE balance_avl_node(AVL_NODE n) {
+    int balance = get_balance(n);
+    if (balance > 1 && get_balance(n->left) >= 0) {
+        return right_rotate_avl(n);
+    }
+    if (balance < -1 && get_balance(n->right) <= 0) {
+        return left_rotate_avl(n);
+    }
+    if (balance > 1 && get_balance(n->left) < 0) {
+        n->left = left_rotate_avl(n->left);
+        return right_rotate_avl(n);
+    }
+    if (balance < -1 && get_balance(n->right) > 0) {
+        n->right = right_rotate_avl(n->right);
+        return left_rotate_avl(n);
+    }
+    return n;
+}
+
 AVL_NODE insert_avl_node(AVL_NODE root, DATA_TYPE data) {
     if (root == NULL) {
         return create_avl_node(data);
@@ -2387,29 +2518,31 @@ AVL_NODE insert_avl_node(AVL_NODE root, DATA_TYPE data) {
         return root;
     }
     root->height = 1 + max(height_avl(root->left), height_avl(root->right));
-    int balance = get_balance(root);
-    if (balance > 1 && GET_DATA(data) < GET_DATA(root->left->data)) {
-        return right_rotate_avl(root);
-    }
-    if (balance < -1 && GET_DATA(data) > GET_DATA(root->right->data)) {
-        return left_rotate_avl(root);
-    }
-    if (balance > 1 && GET_DATA(data) > GET_DATA(root->left->data)) {
-        root->left = left_rotate_avl(root->left);
-        return right_rotate_avl(root);
-    }
-    if (balance < -1 && GET_DATA(data) < GET_DATA(root->right->data)) {
-        root->right = right_rotate_avl(root->right);
-        return left_rotate_avl(root);
-    }
-    return root;
+    return balance_avl_node(root);
 }
 
-void delete_avl_node(AVL_NODE n, DATA_TYPE data) {
+AVL_NODE search_avl(AVL_NODE n, DATA_TYPE data) {
     if (n == NULL) {
-        return;
+        return NULL;
     }
     if (GET_DATA(data) == GET_DATA(n->data)) {
+        return n;
+    }
+    if (GET_DATA(data) < GET_DATA(n->data)) {
+        return search_avl(n->left, data);
+    }
+    return search_avl(n->right, data);
+}
+
+AVL_NODE delete_avl_node(AVL_NODE n, DATA_TYPE data) {
+    if (n == NULL) {
+        return NULL;
+    }
+    if (GET_DATA(data) < GET_DATA(n->data)) {
+        n->left = delete_avl_node(n->left, data);
+    } else if (GET_DATA(data) > GET_DATA(n->data)) {
+        n->right = delete_avl_node(n->right, data);
+    } else {
         if (n->left == NULL && n->right == NULL) {
             free(n);
             n = NULL;
@@ -2427,44 +2560,18 @@ void delete_avl_node(AVL_NODE n, DATA_TYPE data) {
                 temp = temp->left;
             }
             n->data = temp->data;
-            delete_avl_node(n->right, temp->data);
+            n->right = delete_avl_node(n->right, temp->data);
         }
-    } else if (GET_DATA(data) < GET_DATA(n->data)) {
-        delete_avl_node(n->left, data);
-    } else {
-        delete_avl_node(n->right, data);
     }
-
-    // rebalancing
-    n->height = 1 + max(height_avl(n->left), height_avl(n->right));
-    int balance = get_balance(n);
-    if (balance > 1 && GET_DATA(data) < GET_DATA(n->left->data)) {
-        n = right_rotate_avl(n);
-    }
-    if (balance < -1 && GET_DATA(data) > GET_DATA(n->right->data)) {
-        n = left_rotate_avl(n);
-    }
-    if (balance > 1 && GET_DATA(data) > GET_DATA(n->left->data)) {
-        n->left = left_rotate_avl(n->left);
-        n = right_rotate_avl(n);
-    }
-    if (balance < -1 && GET_DATA(data) < GET_DATA(n->right->data)) {
-        n->right = right_rotate_avl(n->right);
-        n = left_rotate_avl(n);
-    }
-}
-
-AVL_NODE search_avl(AVL_NODE n, DATA_TYPE data) {
     if (n == NULL) {
-        return NULL;
-    }
-    if (GET_DATA(data) == GET_DATA(n->data)) {
         return n;
     }
-    if (GET_DATA(data) < GET_DATA(n->data)) {
-        return search_avl(n->left, data);
-    }
-    return search_avl(n->right, data);
+    n->height = 1 + max(height_avl(n->left), height_avl(n->right));
+    return balance_avl_node(n);
+}
+
+int check_avl_tree(AVL_TREE t) {
+    return is_height_balanced(t->root) && is_bst(t->root);
 }
 
 // ============ AVL TREE END ================
@@ -2503,6 +2610,61 @@ BST_PARENT_NODE left_rotate_bst_parent(BST_PARENT_NODE x) {
     return y;
 }
 
+BST_PARENT_NODE balance_bst_parent_node(BST_PARENT_NODE n) {
+    int balance = get_balance_bst_parent(n);
+    if (balance > 1 && get_balance_bst_parent(n->left) >= 0) {
+        return right_rotate_bst_parent(n);
+    }
+    if (balance < -1 && get_balance_bst_parent(n->right) <= 0) {
+        return left_rotate_bst_parent(n);
+    }
+    if (balance > 1 && get_balance_bst_parent(n->left) < 0) {
+        n->left = left_rotate_bst_parent(n->left);
+        return right_rotate_bst_parent(n);
+    }
+    if (balance < -1 && get_balance_bst_parent(n->right) > 0) {
+        n->right = right_rotate_bst_parent(n->right);
+        return left_rotate_bst_parent(n);
+    }
+    return n;
+}
+
+BST_PARENT_NODE predecessor_bst_parent(BST_PARENT_NODE n) {
+    if (n->left != NULL) {
+        n = n->left;
+        while (n->right != NULL) {
+            n = n->right;
+        }
+        return n;
+    } else {
+        BST_PARENT_NODE temp = n;
+        n = n->parent;
+        while (n != NULL && n->left == temp) {
+            temp = n;
+            n = n->parent;
+        }
+        return n;
+    }
+}
+
+BST_PARENT_NODE successor_bst_parent(BST_PARENT_NODE n) {
+    if (n->right != NULL) {
+        n = n->right;
+        while (n->left != NULL) {
+            n = n->left;
+        }
+        return n;
+    } else {
+        BST_PARENT_NODE temp = n;
+        n = n->parent;
+        while (n != NULL && n->right == temp) {
+            temp = n;
+            n = n->parent;
+        }
+        return n;
+    }
+}
+
 BST_PARENT_NODE insert_avl_bst_parent_iterative(BST_PARENT_NODE root, DATA_TYPE data) {
     BST_PARENT_NODE n = create_bst_parent_node(data);
     if (root == NULL) {
@@ -2528,29 +2690,28 @@ BST_PARENT_NODE insert_avl_bst_parent_iterative(BST_PARENT_NODE root, DATA_TYPE 
     }
     BST_PARENT_NODE temp = n;
     while (temp != NULL) {
-        int balance = get_balance_bst_parent(temp);
-        if (balance > 1 && GET_DATA(data) < GET_DATA(temp->left->data)) {
-            return right_rotate_bst_parent(temp);
-        }
-        if (balance < -1 && GET_DATA(data) > GET_DATA(temp->right->data)) {
-            return left_rotate_bst_parent(temp);
-        }
-        if (balance > 1 && GET_DATA(data) > GET_DATA(temp->left->data)) {
-            temp->left = left_rotate_bst_parent(temp->left);
-            return right_rotate_bst_parent(temp);
-        }
-        if (balance < -1 && GET_DATA(data) < GET_DATA(temp->right->data)) {
-            temp->right = right_rotate_bst_parent(temp->right);
-            return left_rotate_bst_parent(temp);
-        }
+        temp = balance_bst_parent_node(temp);
         temp = temp->parent;
     }
     return root;
 }
 
-void delete_avl_bst_parent_iterative(BST_PARENT_NODE n, DATA_TYPE data) {
+BST_PARENT_NODE search_avl_bst_parent(BST_PARENT_NODE n, DATA_TYPE data) {
     if (n == NULL) {
-        return;
+        return NULL;
+    }
+    if (GET_DATA(data) == GET_DATA(n->data)) {
+        return n;
+    }
+    if (GET_DATA(data) < GET_DATA(n->data)) {
+        return search_avl_bst_parent(n->left, data);
+    }
+    return search_avl_bst_parent(n->right, data);
+}
+
+BST_PARENT_NODE delete_avl_bst_parent_iterative(BST_PARENT_NODE n, DATA_TYPE data) {
+    if (n == NULL) {
+        return NULL;
     }
     BST_PARENT_NODE parent = NULL;
     BST_PARENT_NODE current = n;
@@ -2566,31 +2727,42 @@ void delete_avl_bst_parent_iterative(BST_PARENT_NODE n, DATA_TYPE data) {
         }
     }
     if (current == NULL) {
-        return;
+        return n;
     }
     if (current->left == NULL && current->right == NULL) {
+        if (parent == NULL) {
+            free(current);
+            return NULL;
+        }
         if (parent->left == current) {
             parent->left = NULL;
         } else {
             parent->right = NULL;
         }
         free(current);
-        current = NULL;
     } else if (current->left == NULL) {
+        if (parent == NULL) {
+            BST_PARENT_NODE temp = current->right;
+            free(current);
+            return temp;
+        }
         if (parent->left == current) {
             parent->left = current->right;
         } else {
             parent->right = current->right;
         }
-        current->right->parent = parent;
         free(current);
     } else if (current->right == NULL) {
+        if (parent == NULL) {
+            BST_PARENT_NODE temp = current->left;
+            free(current);
+            return temp;
+        }
         if (parent->left == current) {
             parent->left = current->left;
         } else {
             parent->right = current->left;
         }
-        current->left->parent = parent;
         free(current);
     } else {
         BST_PARENT_NODE temp = current->right;
@@ -2600,40 +2772,16 @@ void delete_avl_bst_parent_iterative(BST_PARENT_NODE n, DATA_TYPE data) {
         current->data = temp->data;
         delete_avl_bst_parent_iterative(current->right, temp->data);
     }
-
-    // rebalancing
     BST_PARENT_NODE temp = parent;
     while (temp != NULL) {
-        int balance = get_balance_bst_parent(temp);
-        if (balance > 1 && GET_DATA(data) < GET_DATA(temp->left->data)) {
-            temp = right_rotate_bst_parent(temp);
-        }
-        if (balance < -1 && GET_DATA(data) > GET_DATA(temp->right->data)) {
-            temp = left_rotate_bst_parent(temp);
-        }
-        if (balance > 1 && GET_DATA(data) > GET_DATA(temp->left->data)) {
-            temp->left = left_rotate_bst_parent(temp->left);
-            temp = right_rotate_bst_parent(temp);
-        }
-        if (balance < -1 && GET_DATA(data) < GET_DATA(temp->right->data)) {
-            temp->right = right_rotate_bst_parent(temp->right);
-            temp = left_rotate_bst_parent(temp);
-        }
+        temp = balance_bst_parent_node(temp);
         temp = temp->parent;
     }
+    return n;
 }
 
-BST_PARENT_NODE search_avl_bst_parent(BST_PARENT_NODE n, DATA_TYPE data) {
-    if (n == NULL) {
-        return NULL;
-    }
-    if (GET_DATA(data) == GET_DATA(n->data)) {
-        return n;
-    }
-    if (GET_DATA(data) < GET_DATA(n->data)) {
-        return search_avl_bst_parent(n->left, data);
-    }
-    return search_avl_bst_parent(n->right, data);
+int check_avl_bst_parent(BST_PARENT_NODE n) {
+    return is_height_balanced(n) && is_bst(n);
 }
 
 // ============ AVL TREE USING BST WITH PARENT POINTER END ============
