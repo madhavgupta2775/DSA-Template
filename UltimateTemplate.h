@@ -2334,10 +2334,12 @@ BST_NODE delete_avl(BST_NODE n, DATA_TYPE data) {
             BST_NODE temp = n;
             n = n->right;
             free(temp);
+            temp = NULL;
         } else if (n->right == NULL) {
             BST_NODE temp = n;
             n = n->left;
             free(temp);
+            temp = NULL;
         } else {
             BST_NODE temp = n->right;
             while (temp->left != NULL) {
@@ -2350,6 +2352,9 @@ BST_NODE delete_avl(BST_NODE n, DATA_TYPE data) {
         delete_avl(n->left, data);
     } else {
         delete_avl(n->right, data);
+    }
+    if(n == NULL) {
+        return n;
     }
     n = balance_bst_node(n);
     return n;
@@ -2550,10 +2555,12 @@ AVL_NODE delete_avl_node(AVL_NODE n, DATA_TYPE data) {
             AVL_NODE temp = n;
             n = n->right;
             free(temp);
+            temp = NULL;
         } else if (n->right == NULL) {
             AVL_NODE temp = n;
             n = n->left;
             free(temp);
+            temp = NULL;
         } else {
             AVL_NODE temp = n->right;
             while (temp->left != NULL) {
